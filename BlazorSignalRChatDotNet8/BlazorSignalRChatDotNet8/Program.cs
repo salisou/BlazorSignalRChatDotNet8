@@ -1,11 +1,16 @@
 using BlazorSignalRChatDotNet8.Client.Pages;
 using BlazorSignalRChatDotNet8.Components;
+using BlazorSignalRChatDotNet8.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
+
+
+// Chiamata del servizio SignalR
+builder.Services.AddSignalR();
 
 var app = builder.Build();
 
@@ -25,6 +30,9 @@ app.UseHttpsRedirection();
 
 app.UseStaticFiles();
 app.UseAntiforgery();
+
+// Mappatura della classe ChtHub con SignalR
+app.MapHub<ChatHub>("/chatHub");
 
 app.MapRazorComponents<App>()
     .AddInteractiveWebAssemblyRenderMode()

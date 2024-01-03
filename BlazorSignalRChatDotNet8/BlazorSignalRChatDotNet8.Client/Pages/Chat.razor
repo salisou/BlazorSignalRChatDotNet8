@@ -1,0 +1,66 @@
+﻿@page "/chat"
+@inject NavigationManager NavigationManager
+@rendermode InteractiveWebAssembly
+
+
+<h3>Chat</h3>
+
+<!-- Se la connessione al server SignalR è attiva, 
+visualizza i campi di input, 
+il pulsante di invio e la lista dei messaggi -->
+@if (IsConnected)
+{
+    <input type="text" @bind="userInput"/>
+    <input type="text" @bind="messageInput"/>
+    <button @onclick="Send">Invia</button>
+
+    <!-- Lista non ordinata per visualizzare i messaggi -->
+    <ul id="messages">
+        @foreach(var message in messages)
+        {
+            <li>@message</li>
+        }
+    </ul>
+}
+else
+{
+    <!-- Se la connessione al server SignalR non è attiva, mostra un messaggio di "Connettiti..." -->
+    <span>Connettiti...</span>
+}
+
+
+
+@code {
+    private HubConnection hubConnection;
+    private List<string> messages = new();
+    private string userInput;
+    private string messageInput;
+
+    // Connessione al server SignalR quando la pagina viene inizializzata
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder()
+        .WithUrl(NavigationManager.ToAbsoluteUri("/chathub"))
+        .Build();
+
+        // Registra un gestore per l'evento "RiceviMessaggi" che aggiunge i messaggi alla lista
+        hubConnection.On<string, string>("RiceviMessaggi", (user, message) =>
+        {
+            var encodedMsg = $"{user}: {message}";
+            messages.Add(encodedMsg);
+            StateHasChanged();
+            // Aggiorna la visualizzazione per riflettere i nuovi messaggi
+
+
+        });
+
+        // Avvia la connessione al server SignalR
+        await hubConnection.StartAsync();
+    }
+
+    // Metodo chiamato quando viene premuto il pulsante "Invia"
+    Task Send() => hubConnection.SendAsync("InviaMessaggio", userInput, messageInput);
+
+        // Proprietà che restituisce true se la connessione al server SignalR è attiva
+    public bool IsConnected => hubConnection.State == HubConnectionState.Connected;
+}
